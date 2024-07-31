@@ -1,28 +1,46 @@
-import Parchment from 'parchment';
-import Emitter from '../core/emitter';
-import Block, { BlockEmbed } from './block';
-import Break from './break';
-import CodeBlock from '../formats/code';
-import Container from './container';
-
+import Parchment from "parchment";
+import Emitter from "../core/emitter";
+import Block, { BlockEmbed } from "./block";
+import Break from "./break";
+import CodeBlock from "../formats/code";
+import Container from "./container";
 
 function isLine(blot) {
-  return (blot instanceof Block || blot instanceof BlockEmbed);
+  return blot instanceof Block || blot instanceof BlockEmbed;
 }
-
 
 class Scroll extends Parchment.Scroll {
   constructor(domNode, config) {
     super(domNode);
     this.emitter = config.emitter;
     if (Array.isArray(config.whitelist)) {
-      this.whitelist = config.whitelist.reduce(function(whitelist, format) {
+      this.whitelist = config.whitelist.reduce(function (whitelist, format) {
         whitelist[format] = true;
         return whitelist;
       }, {});
     }
     // Some reason fixes composition issues with character languages in Windows/Chrome, Safari
-    this.domNode.addEventListener('DOMNodeInserted', function() {});
+    // this.domNode.addEventListener('DOMNodeInserted', function() {});
+    const configDomChild = { childList: true, subtree: true };
+
+    // Callback function to execute when mutations are observed
+    // eslint-disable-next-line func-style
+    const callback = function (mutationsList) {
+      for (const mutation of mutationsList) {
+        if (mutation.type === "childList") {
+          // eslint-disable-next-line no-console
+          console.log("A child node has been added or removed.");
+          // Your code here to handle the new node
+        }
+      }
+    };
+
+    // Create an observer instance linked to the callback function
+    const observer = new MutationObserver(callback);
+
+    // Start observing the target node for configured mutations
+    observer.observe(this.domNode, configDomChild);
+
     this.optimize();
     this.enable();
   }
@@ -38,7 +56,7 @@ class Scroll extends Parchment.Scroll {
 
   deleteAt(index, length) {
     let [first, offset] = this.line(index);
-    let [last, ] = this.line(index + length);
+    let [last] = this.line(index + length);
     super.deleteAt(index, length);
     if (last != null && first !== last && offset > 0) {
       if (first instanceof BlockEmbed || last instanceof BlockEmbed) {
@@ -68,7 +86,7 @@ class Scroll extends Parchment.Scroll {
   }
 
   enable(enabled = true) {
-    this.domNode.setAttribute('contenteditable', enabled);
+    this.domNode.setAttribute("contenteditable", enabled);
   }
 
   formatAt(index, length, format, value) {
@@ -80,10 +98,13 @@ class Scroll extends Parchment.Scroll {
   insertAt(index, value, def) {
     if (def != null && this.whitelist != null && !this.whitelist[value]) return;
     if (index >= this.length()) {
-      if (def == null || Parchment.query(value, Parchment.Scope.BLOCK) == null) {
+      if (
+        def == null ||
+        Parchment.query(value, Parchment.Scope.BLOCK) == null
+      ) {
         let blot = Parchment.create(this.statics.defaultChild);
         this.appendChild(blot);
-        if (def == null && value.endsWith('\n')) {
+        if (def == null && value.endsWith("\n")) {
           value = value.slice(0, -1);
         }
         blot.insertAt(0, value, def);
@@ -119,8 +140,9 @@ class Scroll extends Parchment.Scroll {
 
   lines(index = 0, length = Number.MAX_VALUE) {
     let getLines = (blot, index, length) => {
-      let lines = [], lengthLeft = length;
-      blot.children.forEachAt(index, length, function(child, index, length) {
+      let lines = [],
+        lengthLeft = length;
+      blot.children.forEachAt(index, length, function (child, index, length) {
         if (isLine(child)) {
           lines.push(child);
         } else if (child instanceof Parchment.Container) {
@@ -142,13 +164,13 @@ class Scroll extends Parchment.Scroll {
   }
 
   path(index) {
-    return super.path(index).slice(1);  // Exclude self
+    return super.path(index).slice(1); // Exclude self
   }
 
   update(mutations) {
     if (this.batch === true) return;
     let source = Emitter.sources.USER;
-    if (typeof mutations === 'string') {
+    if (typeof mutations === "string") {
       source = mutations;
     }
     if (!Array.isArray(mutations)) {
@@ -157,17 +179,16 @@ class Scroll extends Parchment.Scroll {
     if (mutations.length > 0) {
       this.emitter.emit(Emitter.events.SCROLL_BEFORE_UPDATE, source, mutations);
     }
-    super.update(mutations.concat([]));   // pass copy
+    super.update(mutations.concat([])); // pass copy
     if (mutations.length > 0) {
       this.emitter.emit(Emitter.events.SCROLL_UPDATE, source, mutations);
     }
   }
 }
-Scroll.blotName = 'scroll';
-Scroll.className = 'ql-editor';
-Scroll.tagName = 'DIV';
-Scroll.defaultChild = 'block';
+Scroll.blotName = "scroll";
+Scroll.className = "ql-editor";
+Scroll.tagName = "DIV";
+Scroll.defaultChild = "block";
 Scroll.allowedChildren = [Block, BlockEmbed, Container];
-
 
 export default Scroll;
