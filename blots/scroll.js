@@ -21,25 +21,25 @@ class Scroll extends Parchment.Scroll {
     }
     // Some reason fixes composition issues with character languages in Windows/Chrome, Safari
     // this.domNode.addEventListener('DOMNodeInserted', function() {});
-    // const configDomChild = { childList: true, subtree: true };
+    const configDomChild = { childList: true, subtree: true };
 
-    // // Callback function to execute when mutations are observed
-    // // eslint-disable-next-line func-style
-    // const callback = function (mutationsList) {
-    //   for (const mutation of mutationsList) {
-    //     if (mutation.type === "childList") {
-    //       // eslint-disable-next-line no-console
-    //       // console.log("A child node has been added or removed.");
-    //       // Your code here to handle the new node
-    //     }
-    //   }
-    // };
+    // Callback function to execute when mutations are observed
+    // eslint-disable-next-line func-style
+    const callback = function (mutationsList) {
+      for (const mutation of mutationsList) {
+        if (mutation.type === "childList") {
+          // eslint-disable-next-line no-console
+          // console.log("A child node has been added or removed.");
+          // Your code here to handle the new node
+        }
+      }
+    };
 
-    // // Create an observer instance linked to the callback function
-    // const observer = new MutationObserver(callback);
+    // Create an observer instance linked to the callback function
+    const observer = new MutationObserver(callback);
 
-    // // Start observing the target node for configured mutations
-    // observer.observe(this.domNode, configDomChild);
+    // Start observing the target node for configured mutations
+    observer.observe(this.domNode, configDomChild);
 
     this.optimize();
     this.enable();
